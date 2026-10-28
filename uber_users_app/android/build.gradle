@@ -1,0 +1,34 @@
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+
+// Provide namespace for older Android library plugins that only declare package in the manifest.
+subprojects { sub ->
+    sub.pluginManager.withPlugin("com.android.library") {
+        def android = sub.extensions.findByName("android")
+        if (android != null && android.namespace == null) {
+            def manifest = sub.file("src/main/AndroidManifest.xml")
+            if (manifest.exists()) {
+                def pkg = new XmlSlurper().parse(manifest).@package.text()
+                if (pkg) {
+                    android.namespace = pkg
+                }
+            }
+        }
+    }
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
